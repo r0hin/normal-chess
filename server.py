@@ -13,8 +13,8 @@ import pickle
 
 """ CONSTANTS """
 
-CAFFENET_DEPLOY_TXT = '/Users/daylenyang/caffe/models/finetune_chess/deploy.prototxt'
-CAFFENET_MODEL_FILE = '/Users/daylenyang/caffe/models/finetune_chess/finetune_chess_iter_5554.caffemodel'
+CAFFENET_DEPLOY_TXT = '/app/deploy.prototxt'
+CAFFENET_MODEL_FILE = '/app/finetune_chess_iter_5554.caffemodel'
 
 categories = ['bb', 'bk', 'bn', 'bp', 'bq', 'br', 'empty', 'wb', 'wk', 'wn', 'wp', 'wq', 'wr']
 BATCH_SIZE = 64
@@ -125,9 +125,9 @@ def find_board(fname):
     start = time()
     img = cv2.imdecode(fname, 1)
     if img is None:
-        print 'no image'
+        print('no image')
         return None
-    print img.shape
+    print(img.shape)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.blur(gray, (3, 3))
@@ -135,13 +135,13 @@ def find_board(fname):
     # Canny edge detection
     edges = auto_canny(gray)
     if np.count_nonzero(edges) / float(gray.shape[0] * gray.shape[1]) > 0.015:
-        print 'too many edges'
+        print('too many edges')
         return None
 
     # Hough line detection
     lines = cv2.HoughLines(edges, 1, np.pi/180, 200)
     if lines is None:
-        print 'no lines'
+        print('no lines')
         return None
 
     lines = np.reshape(lines, (-1, 2))
@@ -149,7 +149,7 @@ def find_board(fname):
     # Compute intersection points
     h, v = hor_vert_lines(lines)
     if len(h) < 9 or len(v) < 9:
-        print 'too few lines'
+        print('too few lines')
         return None
     points = intersections(h, v)
     
@@ -223,8 +223,9 @@ transformer.set_mean('data', np.array([104.00698793, 116.66876762, 122.67891434]
 transformer.set_raw_scale('data', 255)  # the reference model operates on images in [0,255] range instead of [0,1]
 transformer.set_channel_swap('data', (2,1,0))  # the reference model has channels in BGR order instead of RGB
 
-caffe.set_device(0)
-caffe.set_mode_gpu()
+print("ok")
+# caffe.set_device(0)
+# caffe.set_mode_gpu()
 net.blobs['data'].reshape(BATCH_SIZE, 3, 227, 227)
 
 """ ROUTES """
@@ -252,11 +253,11 @@ def upload_file():
             if board is None:
                 return jsonify({'error': 'could not find board'})
             squares = split_board(board)
-            print 'finished board rec', time() - start
+            print('finished board rec', time() - start)
             input_images = [transformer.preprocess('data', skimage.img_as_float(square).astype(np.float32)) for square in squares]
-            print 'finished preprocess', time() - start
+            print('finished preprocess', time() - start)
             predictions = None
-            print 'using batch size', BATCH_SIZE
+            print('using batch size', BATCH_SIZE)
             for i in range(0, 64, BATCH_SIZE):
                 net.blobs['data'].data[...] = np.array(input_images[i:i+BATCH_SIZE])
                 out = net.forward()['prob']
@@ -265,7 +266,7 @@ def upload_file():
                 else:
                     predictions = np.vstack((predictions, out))
 
-            print 'finished nn', time() - start
+            print('finished nn', time() - start)
             fen = get_fen(map(lambda x: categories[x], np.argmax(predictions, axis=1)))
             json = {'fen': fen, 'time': time() - start}
             return jsonify(json)

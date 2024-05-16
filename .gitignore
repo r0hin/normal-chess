@@ -5,3 +5,4 @@ output*
 pictures*
 failed_crop
 labels.txt
+finetune_chess_iter_5554.caffemodel

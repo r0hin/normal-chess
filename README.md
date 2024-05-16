@@ -13,3 +13,8 @@ My experiments are available in the Jupyter notebook.
 First, grab the Caffe model: https://www.dropbox.com/s/fmlt5ook8ugovid/finetune_chess_iter_5554.caffemodel?dl=0
 
 Install all dependencies (Caffe, OpenCV, etc.). Edit paths in server.py and then run it.
+
+## Other notes
+sudo docker build --network=host -t chess-normal .
+
+sudo docker run chess-normal
