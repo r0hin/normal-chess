@@ -23,7 +23,7 @@ RUN apt -y install python
 # Install python dependencies
 RUN apt -y install python3-pip
 
-RUN pip install flask opencv-python
+RUN pip install flask opencv-python scipy scikit-image torchvision torch 
 
 RUN pip install numpy==1.21
 

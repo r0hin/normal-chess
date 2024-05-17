@@ -1,0 +1,1 @@
+mmconvert -sf caffe -in /Users/rohin/GitHub/chess-id/machine/deploy.prototxt -iw /Users/rohin/GitHub/chess-id/machine/finetune_chess_iter_5554.caffemodel -o /Users/rohin/GitHub/chess-id/tests/caffe_chess_IR -df caffe -iwf caffe

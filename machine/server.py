@@ -6,10 +6,11 @@ import scipy.cluster as clstr
 from time import time
 from collections import defaultdict
 from functools import partial
-import glob
-import caffe
+import torch
+import caffemodel2pytorch
+from PIL import Image
+import torchvision.transforms as transforms
 import skimage
-import pickle
 
 """ CONSTANTS """
 
@@ -125,8 +126,7 @@ def find_board(fname):
     start = time()
     img = cv2.imdecode(fname, 1)
     if img is None:
-        print('no image')
-        return None
+        return [None, "no image"]
     print(img.shape)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -135,22 +135,19 @@ def find_board(fname):
     # Canny edge detection
     edges = auto_canny(gray)
     if np.count_nonzero(edges) / float(gray.shape[0] * gray.shape[1]) > 0.015:
-        print('too many edges')
-        return None
+        return [None, "too many edges"]
 
     # Hough line detection
     lines = cv2.HoughLines(edges, 1, np.pi/180, 200)
     if lines is None:
-        print('no lines')
-        return None
+        return [None, "no lines"]
 
     lines = np.reshape(lines, (-1, 2))
     
     # Compute intersection points
     h, v = hor_vert_lines(lines)
     if len(h) < 9 or len(v) < 9:
-        print('too few lines')
-        return None
+        return [None, "too few lines"]
     points = intersections(h, v)
     
     # Cluster intersection points
@@ -215,13 +212,21 @@ def get_square_to_pieces_dict(prob_matrix):
 
 """ LOADING """
 
-net = caffe.Net(CAFFENET_DEPLOY_TXT, CAFFENET_MODEL_FILE, caffe.TEST)
+net = caffemodel2pytorch.Net(prototxt=CAFFENET_DEPLOY_TXT, weights=CAFFENET_MODEL_FILE, caffe_proto = 'https://raw.githubusercontent.com/BVLC/caffe/master/src/caffe/proto/caffe.proto')
 
-transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
-transformer.set_transpose('data', (2,0,1))
-transformer.set_mean('data', np.array([104.00698793, 116.66876762, 122.67891434]));
-transformer.set_raw_scale('data', 255)  # the reference model operates on images in [0,255] range instead of [0,1]
-transformer.set_channel_swap('data', (2,1,0))  # the reference model has channels in BGR order instead of RGB
+net.eval()
+torch.set_grad_enabled(False)
+
+mean = [104.00698793, 116.66876762, 122.67891434]
+std = [1.0, 1.0, 1.0]  # Assuming no scaling for standard deviation
+
+# Define the transform
+transform = transforms.Compose([
+    transforms.ToTensor(),  # Converts to [0, 1] and changes shape to (C, H, W)
+    transforms.Lambda(lambda x: x * 255),  # Scale image to [0, 255]
+    transforms.Normalize(mean=mean, std=std),  # Normalize with mean and std
+    transforms.Lambda(lambda x: x[[2, 1, 0], :, :])  # Swap channels from RGB to BGR
+])
 
 print("ok")
 # caffe.set_device(0)
@@ -234,6 +239,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello():
+    print("hello world")
     return 'Chess ID. usage: /upload'
 
 ALLOWED_EXTENSIONS = set(['jpg', 'jpeg', 'JPG', 'JPEG'])
@@ -249,12 +255,22 @@ def upload_file():
         if file and allowed_file(file.filename):
             start = time()
             img = np.asarray(bytearray(file.read()))
-            board = find_board(img)
+            boards = find_board(img)
+            board = boards[0]
+            reason = boards[1]
             if board is None:
-                return jsonify({'error': 'could not find board'})
+                return jsonify({'error': reason})
             squares = split_board(board)
             print('finished board rec', time() - start)
-            input_images = [transformer.preprocess('data', skimage.img_as_float(square).astype(np.float32)) for square in squares]
+
+            def preprocess_image(image):
+                # Convert to float and then to PIL Image
+                image = Image.fromarray((skimage.img_as_float(image) * 255).astype(np.uint8))
+                # Apply the transformations
+                transformed_image = transform(image)
+                return transformed_image
+
+            input_images = [preprocess_image(square) for square in squares]
             print('finished preprocess', time() - start)
             predictions = None
             print('using batch size', BATCH_SIZE)

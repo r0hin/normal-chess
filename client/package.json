@@ -1,0 +1,15 @@
+{
+  "name": "next",
+  "module": "index.ts",
+  "scripts": {
+    "start": "npx tsc && node lib/index.js",
+    "explore": "npx tsc && node lib/explorer.js"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.4",
+    "firebase-admin": "^12.0.0"
+  }
+}
