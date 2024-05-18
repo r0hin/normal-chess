@@ -7,8 +7,8 @@ const app = initializeApp({ // @ts-ignore
   credential: cert({
     projectId: "ana-ai0",
     privateKey: (process.env.FIREBASE_PRIVATE_KEY as string).replace(/\\n/gm, "\n"),
-    clientEmail: "firebase-adminsdk-laahy@ana-ai0.iam.gserviceaccount.com"
+    clientEmail: ""
   }),
 });
-const db = getFirestore(app);
 
+const db = getFirestore(app);

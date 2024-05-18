@@ -356,14 +356,17 @@ def find_board(fname):
     # At each point, draw a big purple circle with a radius of 15 pixels
     for point in points:
         cv2.circle(img, (int(point[0]), int(point[1])), 15, (255, 0, 255), -1)
+        cv2.circle(original_img, (int(point[0]), int(point[1])), 15, (255, 0, 255), -1)
 
     # given a collection of points, find the four corners of the quadrilateral that encloses them
     
     corners = find_corners(points)
     for corner in corners:
         cv2.circle(img, (int(corner[0]), int(corner[1])), 25, (0, 255, 255), -1)
+        cv2.circle(original_img, (int(corner[0]), int(corner[1])), 25, (0, 255, 255), -1)
 
     cv2.imwrite('boardpre.jpg', img)
+    cv2.imwrite('boardpreoriginal.jpg', original_img)
 
     print(corners)
 
@@ -442,7 +445,7 @@ def split_board(img):
     return arr
 
 if __name__ == '__main__':
-    # file = open('/Users/rohin/Desktop/final.jpg', 'rb')
-    file = open('/Users/rohin/Desktop/IMG_8452.jpg', 'rb')
+    file = open('/Users/rohin/Desktop/final.jpg', 'rb')
+    # file = open('/Users/rohin/Desktop/IMG_8452.jpg', 'rb')
     img = np.asarray(bytearray(file.read()))
     boards = find_board(img)
