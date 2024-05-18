@@ -210,9 +210,6 @@ def find_board(fname):
         intersections = sorted(intersections, key=lambda x: x[0][0])
 
     # HORIZONTAL LINE PROCESSING
-    
-    horizontal_lines.pop(0)
-    horizontal_lines.pop(1)
 
     # REMOVE HORIZONTAL LINES THAT ARE TOO CLOSE TOGETHER
     vtan = (img.shape[1] / 2, 0)
@@ -361,14 +358,14 @@ def find_board(fname):
         cv2.circle(img, (int(point[0]), int(point[1])), 15, (255, 0, 255), -1)
 
     # given a collection of points, find the four corners of the quadrilateral that encloses them
-    def find_corners(points):
-        hull = spatial.ConvexHull(points)
-        hull_points = points[hull.vertices]
-        return hull_points
     
     corners = find_corners(points)
     for corner in corners:
-        cv2.circle(img, (int(corner[0]), int(corner[1])), 15, (0, 0, 255), -1)
+        cv2.circle(img, (int(corner[0]), int(corner[1])), 25, (0, 255, 255), -1)
+
+    cv2.imwrite('boardpre.jpg', img)
+
+    print(corners)
 
     # Tranform "points" by the same perspective transformation 
     new_img = four_point_transform(original_img, corners)
@@ -377,8 +374,9 @@ def find_board(fname):
     squared = split_board(new_img)
 
     for i in range(64):
-        print('writing square', i)
         cv2.imwrite('square' + str(i) + '.jpg', squared[i])
+
+    print("wrote squares")
 
 
 
@@ -389,6 +387,42 @@ def find_board(fname):
     # return new_img
     exit()
     return 0
+
+def find_corners(points):
+    hull = spatial.ConvexHull(points)
+    hull_points = points[hull.vertices]
+    
+    # Calculate the minimum-area bounding rectangle
+    min_area = float('inf')
+    best_rect = None
+    
+    for i in range(len(hull_points)):
+        # Take two consecutive points on the hull to determine an edge
+        edge = hull_points[(i+1) % len(hull_points)] - hull_points[i]
+        edge /= np.linalg.norm(edge)
+        
+        # Rotate all points to align this edge with the x-axis
+        rot_matrix = np.array([[edge[0], edge[1]], [-edge[1], edge[0]]])
+        rotated_points = np.dot(rot_matrix, hull_points.T).T
+        
+        # Find the bounding box of the rotated points
+        min_x, max_x = np.min(rotated_points[:,0]), np.max(rotated_points[:,0])
+        min_y, max_y = np.min(rotated_points[:,1]), np.max(rotated_points[:,1])
+        
+        # Calculate area of the bounding box
+        area = (max_x - min_x) * (max_y - min_y)
+        if area < min_area:
+            min_area = area
+            best_rect = (min_x, max_x, min_y, max_y)
+            best_rotation = -rot_matrix.T
+    
+    # Get the corners of the best rectangle found
+    min_x, max_x, min_y, max_y = best_rect
+    corners = np.array([[min_x, min_y], [max_x, min_y], [max_x, max_y], [min_x, max_y]])
+    
+    # Rotate the corners back to the original orientation
+    corners = np.dot(best_rotation, corners.T).T
+    return corners
 
 def split_board(img):
     """
