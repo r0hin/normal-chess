@@ -1,20 +1,9 @@
-# Chess ID
+# Normal-Chess
 
-What this repo is meant for: if you would to build your own chesspiece identification models, or if you want to deploy a Chess ID server.
+This is the source code for a robotic chess engine which uses computer vision and machine learning to recognize chess boards and make moves.
 
-## Experiment with your own models
+## Pictures
 
-First, grab the data: https://www.dropbox.com/s/618l4ddoykotmru/Chess%20ID%20Public%20Data.zip?dl=0
+<img src="./pics//gallery.jpg">
 
-My experiments are available in the Jupyter notebook.
-
-## Deploy the Chess ID server
-
-First, grab the Caffe model: https://www.dropbox.com/s/fmlt5ook8ugovid/finetune_chess_iter_5554.caffemodel?dl=0
-
-Install all dependencies (Caffe, OpenCV, etc.). Edit paths in server.py and then run it.
-
-## Other notes
-sudo docker build --network=host -t chess-normal .
-
-sudo docker run chess-normal
+<img src="./pics/gallery (1).jpg">
